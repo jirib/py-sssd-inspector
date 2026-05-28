@@ -1,0 +1,27 @@
+min_version = "2026.2.4"
+
+[env]
+_.python.venv = { path = ".venv", create = true }
+
+[tools]
+python = "3.12"
+uv = "latest"
+ruff = "latest"
+
+[tasks.setup]
+description = "Install the package with dev dependencies"
+run = "uv pip install -e .[dev]"
+
+[tasks.test]
+description = "Run tests"
+run = "uv run pytest"
+
+[tasks.lint]
+description = "Lint the code"
+run = "ruff check src/"
+
+[tasks.inspect]
+run = [
+    "echo 'Initializing inspection...'", 
+    "uv run sssd-inspector"
+]

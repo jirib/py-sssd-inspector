@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sssd-inspector"
+version = "0.1.0"
+description = "An error parser and hierarchical data anonymizer for SSSD logs."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff",
+]
+
+[project.scripts]
+sssd-inspector = "sssd_inspector.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sssd_inspector"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "Q"]

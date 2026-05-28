@@ -1,9 +1,13 @@
 # py-sssd-inspector
 
-An example:
+## Installation
+
+Install via `pipx`.
+
+### An example
 
 ``` shell
-$ uv run sssd-inspector.py --logdir /tmp/sssd --error-patterns sssd_error_patterns.yaml --log-glob '*.log' --nopager
+$ sssd-inspector --logdir /tmp/sssd --log-glob '*.log' --nopager
 Analyzing logs: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:35<00:00,  4.45s/file]
 #== krb5_child.log =============================================================
 
