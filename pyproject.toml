@@ -7,7 +7,7 @@ name = "sssd-inspector"
 version = "0.1.0"
 description = "An error parser and hierarchical data anonymizer for SSSD logs."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 dependencies = [
     "pyyaml>=6.0",
     "tqdm>=4.66",
