@@ -6,7 +6,7 @@ Install via `pipx install git+https://github.com/jirib/py-sssd-inspector`. The
 minimum Python version is defined at [pyproject.toml](https://github.com/jirib/py-sssd-inspector/blob/main/pyproject.toml#L10).
 
 
-### An example
+## Usage
 
 ``` shell
 $ sssd-inspector --logdir /tmp/sssd --log-glob '*.log' --nopager
@@ -61,4 +61,25 @@ Analyzing logs: 100%|███████████████████�
 - pattern: Preauthentication failed
   - May 27 06:02:53 HOSTNAME krb5_child[9997]: Preauthentication failed
   - May 27 06:02:53 HOSTNAME krb5_child[9997]: Preauthentication failed
+```
+
+## Tools
+
+- `tools/supportconfig2sssd-logs.py` is a helper tool to extract SSSD logs from
+  supportconfig, which can be inspected by `sssd-inspector`.
+  ``` shell
+  $ SCRIPT_PATH="$(pipx runpip sssd-inspector show sssd-inspector | grep -Po '^Location: \K(.*)')/sssd_inspector/tools/supportconfig2sssd-logs.py"
+  $ python3 "$SCRIPT_PATH" --help
+  usage: supportconfig2sssd-logs.py [-h] (--supportconfig SUPPORTCONFIG | --sssd-txt-file SSSD_TXT_FILE) [--output-dir OUTPUT_DIR]
+
+  Split a unified sssd.txt support output file back into isolated component logs.
+
+  options:
+    -h, --help            show this help message and exit
+    --supportconfig SUPPORTCONFIG
+                          Path to a compressed SUSE supportconfig archive (.tar.gz, .tgz, .txz)
+    --sssd-txt-file SSSD_TXT_FILE
+                          Direct filesystem path to an already extracted standalone sssd.txt file
+    --output-dir OUTPUT_DIR
+                        Directory context where logs will be split (defaults to $TMPDIR: '/tmp')
 ```
