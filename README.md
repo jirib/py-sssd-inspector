@@ -2,7 +2,9 @@
 
 ## Installation
 
-Install via `pipx`.
+Install via `pipx install git+https://github.com/jirib/py-sssd-inspector`. The
+minimum Python version is defined at [pyproject.toml](https://github.com/jirib/py-sssd-inspector/blob/main/pyproject.toml#L10).
+
 
 ### An example
 
