@@ -14,7 +14,8 @@ def process_single_file(
     noanonymize: bool
 ) -> dict[str, list[str]]:
     """
-    Worker function: Scans a single log file using a pre-compiled regex state machine.
+    Scans a single log file using fast literal substring matching and applies
+    late-anonymization only to the final retained lines.
     """
     local_results: dict[str, list[str]] = {}
 
