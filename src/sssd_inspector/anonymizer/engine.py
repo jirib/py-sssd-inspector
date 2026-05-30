@@ -1,9 +1,32 @@
 import re
 import threading
 
+SYSLOG_REGEX = re.compile(
+    r"^([A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+)(\S+)"
+)
+IPV4_REGEX = re.compile(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b")
+IPV6_REGEX = re.compile(
+    r"\b(?:[a-f0-9]{1,4}:){7}[a-f0-9]{1,4}\b|"
+    r"\b(?:[a-f0-9]{1,4}:){1,7}:|"
+    r"\b:(?::[a-f0-9]{1,4}){1,7}\b",
+    re.IGNORECASE
+)
+EMAIL_REGEX = re.compile(
+    r"\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b",
+    re.IGNORECASE
+)
+DOMAIN_REGEX = re.compile(
+    r"(?<!/)(?:^|(?<=_)|(?<=\s)|\b)"
+    r"((?:[a-zA-Z0-9_-]+\.)+(?!(?:log|conf|txt|py|sh)\b)[a-zA-Z]{2,}\b)",
+    re.IGNORECASE
+)
+FILE_REGEX = re.compile(r"^(sssd_)(.*?)(\.log.*)$", re.IGNORECASE)
+
 
 def apply_case(template: str, original: str) -> str:
-    """Helper to match the casing format of the original string input."""
+    """
+    Helper to match the casing format of the original string input.
+    """
     if original.isupper():
         return template.upper()
     if original and original[0].isupper():
@@ -52,15 +75,18 @@ def get_anon_domain(
         registry["domains"][low_dom] = res.lower()
         return apply_case(res, domain_str)
 
-# TODO: add short-circuiting for known patterns to avoid unnecessary regex processing on large logs
 
 def anonymize_log_filename(filename: str) -> str:
     """
-    Splits log filename using the pattern: (sssd_)(until .log)(.log.*) and masks
-    group 2.
+    Masks the domain part of an sssd_<domain>.log filename.
     """
-    filename_regex = re.compile(r"^(sssd_)(.*?)(\.log.*)$", re.IGNORECASE)
-    match = filename_regex.match(filename)
+    if (
+        not filename.startswith("sssd_")             # only process sssd_ prefixed logs
+        or "." not in filename.partition(".log")[0]  # and, if no dot before .log, skip
+    ):
+        return filename
+
+    match = FILE_REGEX.match(filename)
 
     if match:
         prefix = match.group(1)
@@ -94,8 +120,10 @@ def anonymize_syslog_header(line: str, registry: dict, lock: threading.RLock) ->
     """
     Extracts and redacts syslog hostnames while preserving case layout.
     """
-    syslog_regex = re.compile(r"^([A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+)(\S+)")
-    syslog_match = syslog_regex.match(line)
+    if line[:1].isupper():  # a syslog line starts with a capitalized month name
+        return line
+
+    syslog_match = SYSLOG_REGEX.match(line)
 
     if syslog_match:
         prefix = syslog_match.group(1)
@@ -109,38 +137,51 @@ def anonymize_syslog_header(line: str, registry: dict, lock: threading.RLock) ->
 
 
 def anonymize_ipv4(line: str, registry: dict, lock: threading.RLock) -> str:
-    """Finds and replaces standard IPv4 addresses."""
-    ip_regex = re.compile(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b")
+    """
+    Finds and replaces standard IPv4 addresses.
+    """
+    if "." not in line:  # every IPv4 address contains a dot!
+        return line
+
+    ips = IPV4_REGEX.findall(line)
+    if not ips:
+        return line
+
     with lock:
-        for ip in ip_regex.findall(line):
+        for ip in ips:
             registry["ips"][ip] = "XXX.XXX.XXX.XXX"
-    return ip_regex.sub("XXX.XXX.XXX.XXX", line)
+
+    return IPV4_REGEX.sub("XXX.XXX.XXX.XXX", line)
 
 
 def anonymize_ipv6(line: str, registry: dict, lock: threading.RLock) -> str:
     """
     Finds and replaces shorthand and longform IPv6 targets.
     """
-    ipv6_regex = re.compile(
-        r"\b(?:[a-f0-9]{1,4}:){7}[a-f0-9]{1,4}\b|"
-        r"\b(?:[a-f0-9]{1,4}:){1,7}:|"
-        r"\b:(?::[a-f0-9]{1,4}){1,7}\b",
-        re.IGNORECASE
-    )
+    if ":" not in line:  # every IPv6 address contains a colon!
+        return line
+
+    ips = IPV6_REGEX.findall(line)
+    if not ips:
+        return line
+
     with lock:
-        for ip6 in ipv6_regex.findall(line):
+        for ip6 in ips:
             registry["ipv6s"][ip6] = "XXXX:XXXX::XXXX"
-    return ipv6_regex.sub("XXXX:XXXX::XXXX", line)
+
+    return IPV6_REGEX.sub("XXXX:XXXX::XXXX", line)
 
 
 def anonymize_emails(line: str, registry: dict, lock: threading.RLock) -> str:
     """
     Redacts complex email addresses, checking for nested user subdomains.
     """
-    email_regex = re.compile(
-        r"\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b",
-        re.IGNORECASE
-    )
+    if "@" not in line:  # every email address contains an @ symbol!
+        return line
+
+    emails = EMAIL_REGEX.findall(line)
+    if not emails:
+        return line
 
     def preserve_email_case(match: re.Match) -> str:
         full_email = match.group(0)
@@ -158,26 +199,30 @@ def anonymize_emails(line: str, registry: dict, lock: threading.RLock) -> str:
             registry["emails"][full_email] = anon_email
         return anon_email
 
-    return email_regex.sub(preserve_email_case, line)
+    return EMAIL_REGEX.sub(preserve_email_case, line)
 
 
 def anonymize_domains(line: str, registry: dict, lock: threading.RLock) -> str:
     """
     Identifies and handles dynamic infrastructure domains hierarchically.
     """
-    domain_regex = re.compile(
-        r"(?<!/)(?:^|(?<=_)|(?<=\s)|\b)((?:[a-zA-Z0-9_-]+\.)+(?!(?:log|conf|txt|py|sh)\b)[a-zA-Z]{2,}\b)",
-        re.IGNORECASE
-    )
+    if "." not in line:  # every domain contains a dot!
+        return line
+
+    domains = DOMAIN_REGEX.findall(line)
+    if not domains:
+        return line
 
     def preserve_domain_case(match: re.Match) -> str:
         return get_anon_domain(match.group(0), registry, lock)
 
-    return domain_regex.sub(preserve_domain_case, line)
+    return DOMAIN_REGEX.sub(preserve_domain_case, line)
 
 
 def anonymize_line(line: str, registry: dict, lock: threading.RLock) -> str:
-    """Executes all structural anonymization helper routines sequentially."""
+    """
+    Executes all structural anonymization helper routines sequentially.
+    """
     line = anonymize_syslog_header(line, registry, lock)
     line = anonymize_ipv4(line, registry, lock)
     line = anonymize_ipv6(line, registry, lock)
