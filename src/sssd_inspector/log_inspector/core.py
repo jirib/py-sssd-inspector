@@ -5,6 +5,7 @@ from threading import RLock
 
 from ..anonymizer import anonymize_line
 
+# TODO: combine patterns into a single regex
 def process_single_file(
     file_path: Path,
     patterns: list[dict[str, str]],

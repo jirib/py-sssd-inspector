@@ -52,6 +52,7 @@ def get_anon_domain(
         registry["domains"][low_dom] = res.lower()
         return apply_case(res, domain_str)
 
+# TODO: add short-circuiting for known patterns to avoid unnecessary regex processing on large logs
 
 def anonymize_log_filename(filename: str) -> str:
     """
