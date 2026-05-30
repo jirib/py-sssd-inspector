@@ -8,7 +8,6 @@ def load_patterns() -> list[dict[str, str]]:
     asset.
     """
     try:
-        # Safely resolve and open the asset inside the installed package directory
         traversable = resources.files(
             "sssd_inspector.log_inspector"
         ).joinpath("sssd_error_patterns.yaml")
@@ -32,3 +31,15 @@ def load_patterns() -> list[dict[str, str]]:
         file=sys.stderr
     )
     sys.exit(1)
+
+
+def extract_search_strings(patterns: list[dict[str, str]]) -> list[str]:
+    """
+    Transforms list[dict[str, str]] into a flat list[str] for the C-matching engine.
+    Deduplicates and sorts by length descending to optimize processing.
+    """
+    raw_strings = {item["pattern"] for item in patterns if item.get("pattern")}
+
+    return sorted(
+        list(raw_strings), key=len, reverse=True
+    )  # more specific patterns first

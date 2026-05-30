@@ -5,7 +5,7 @@ import sys
 from tqdm import tqdm
 
 from sssd_inspector.anonymizer import anonymize_log_filename
-from sssd_inspector.log_inspector import load_patterns, process_logs_concurrently
+from sssd_inspector.log_inspector import process_logs
 
 
 def main() -> None:
@@ -47,9 +47,7 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    patterns = load_patterns()
 
-    # Set up UI elements exclusively at the CLI boundary
     pbar = tqdm(desc="Analyzing logs", unit="file", total=0, file=sys.stderr)
 
     def ui_driver(advance: int, total_add: int) -> None:
@@ -59,16 +57,15 @@ def main() -> None:
             pbar.update(advance)
 
     try:
-        results, registry = process_logs_concurrently(
+        results, registry = process_logs(
             log_dir=args.log_dir,
-            patterns=patterns,
             log_glob=args.log_glob,
             max_lines=args.last_lines,
             noanonymize=args.noanonymize,
-            progress_callback=ui_driver  # Handing the UI controller over to the engine
+            progress_callback=ui_driver
         )
     finally:
-        pbar.close()  # Guarantees the terminal line breaks cleanly even on failure
+        pbar.close()
 
     if not results:
         print("No matching log entries found.")
@@ -88,7 +85,6 @@ def main() -> None:
         header_line = f"#== {filename_header} ".ljust(80, "=")[:80]
         output_buffer.write(f"{header_line}\n\n")
 
-        # Use enumerate here too to cleanly space out patterns inside the same file
         for p_idx, (pattern, lines) in enumerate(sorted(patterns_dict.items())):
             if p_idx > 0:
                 output_buffer.write("\n")

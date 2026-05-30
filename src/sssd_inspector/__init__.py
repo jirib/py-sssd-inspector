@@ -1,9 +1,9 @@
 # sssd_inspector/__init__.py
 from sssd_inspector.anonymizer import anonymize_line, anonymize_log_filename
-from sssd_inspector.log_inspector import process_logs_concurrently
+from sssd_inspector.log_inspector import process_logs
 
 __all__ = [
     "anonymize_line",
     "anonymize_log_filename",
-    "process_logs_concurrently",
+    "process_logs",
 ]
