@@ -13,17 +13,20 @@ dependencies = [
     "tqdm>=4.66",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0",
-    "ruff",
-]
+[dependency-groups]
+dev = ["pyright", "pytest", "ruff"]
 
 [project.scripts]
 sssd-inspector = "sssd_inspector.cli:main"
+supportconfig2sssd-logs = "sssd_inspector.tools.supportconfig_parser:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sssd_inspector"]
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "Q"]
+select = [
+    "E", "W", "F", "Q",
+    "ANN001",  # Enforce type hints on function arguments
+    "ANN201",  # Enforce return types on public functions
+    "ANN202",  # Enforce return types on private functions
+]

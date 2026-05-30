@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import argparse
 import io
 import os
@@ -8,7 +7,8 @@ from pathlib import Path
 
 def dump_log_file(log_path_str: str, lines: list[str], output_dir: Path) -> None:
     """
-    Dumps isolated log lines back to a structured tree layout under the target output directory.
+    Dumps isolated log lines back to a structured tree layout under the target
+    output directory.
     """
     if not log_path_str:
         return
@@ -35,9 +35,10 @@ def dump_log_file(log_path_str: str, lines: list[str], output_dir: Path) -> None
     print(f"saving {len(lines)} lines to {new_path}.")
 
 
-def parse_sssd_stream(stream_iterable, output_dir: Path) -> None:
+def parse_sssd_stream(stream_iterable: io.TextIOWrapper, output_dir: Path) -> None:
     """
-    Loops line-by-line through any text generator stream matching the combined dump layout.
+    Loops line-by-line through any text generator stream matching the combined dump
+    layout.
     """
     current_path = ""
     current_lines = []
@@ -64,9 +65,10 @@ def parse_sssd_stream(stream_iterable, output_dir: Path) -> None:
         dump_log_file(current_path, current_lines, output_dir)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Split a unified sssd.txt support output file back into isolated component logs."
+        description="Split a unified sssd.txt support output file back into isolated" \
+        "component logs."
     )
 
     group = parser.add_mutually_exclusive_group(required=True)
@@ -86,7 +88,8 @@ def main():
         "--output-dir",
         type=Path,
         default=Path(default_tmp),
-        help=f"Directory context where logs will be split (defaults to $TMPDIR: '{default_tmp}')"
+        help="Directory context where logs will be split (defaults to $TMPDIR:"
+            f"'{default_tmp}')"
     )
 
     args = parser.parse_args()
@@ -94,7 +97,10 @@ def main():
 
     if args.sssd_txt_file:
         if not args.sssd_txt_file.exists():
-            print(f"Error: File '{args.sssd_txt_file}' does not exist.", file=sys.stderr)
+            print(
+                f"Error: File '{args.sssd_txt_file}' does not exist.",
+                file=sys.stderr
+            )
             sys.exit(1)
 
         with open(args.sssd_txt_file, "r", encoding="utf-8", errors="replace") as f:
@@ -102,7 +108,10 @@ def main():
 
     elif args.supportconfig:
         if not args.supportconfig.exists():
-            print(f"Error: Archive '{args.supportconfig}' does not exist.", file=sys.stderr)
+            print(
+                f"Error: Archive '{args.supportconfig}' does not exist.",
+                file=sys.stderr
+            )
             sys.exit(1)
 
         try:
@@ -116,19 +125,32 @@ def main():
                         break
 
                 if not sssd_member:
-                    print("Error: Could not locate 'sssd.txt' inside the archive.", file=sys.stderr)
+                    print(
+                        "Error: Could not locate 'sssd.txt' inside the archive.",
+                        file=sys.stderr
+                    )
                     sys.exit(1)
 
                 f = tar.extractfile(sssd_member)
                 if f is None:
-                    print("Error: Failed to open file entry stream inside container.", file=sys.stderr)
+                    print(
+                        "Error: Failed to open file entry stream inside container.",
+                        file=sys.stderr
+                    )
                     sys.exit(1)
 
-                with io.TextIOWrapper(f, encoding="utf-8", errors="replace") as text_stream:
+                with io.TextIOWrapper(
+                    f,
+                    encoding="utf-8",
+                    errors="replace"
+                ) as text_stream:
                     parse_sssd_stream(text_stream, output_dir)
 
         except Exception as e:
-            print(f"An error occurred while processing the archive container: {e}", file=sys.stderr)
+            print(
+                f"An error occurred while processing the archive container: {e}",
+                file=sys.stderr
+            )
             sys.exit(1)
 
 
